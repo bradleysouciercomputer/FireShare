@@ -1,387 +1,186 @@
 package com.fireshare.tv
 
-import android.app.Activity
-import android.app.AlertDialog
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Color
-import android.graphics.Typeface
+import android.os.Build
 import android.os.Bundle
-import android.util.TypedValue
-import android.view.Gravity
-import android.view.View
-import android.view.ViewGroup
-import android.widget.GridLayout
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
-import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Collections
+import androidx.compose.material.icons.rounded.CloudUpload
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.QrCode2
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.StopCircle
+import androidx.compose.material.icons.rounded.Tv
+import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import java.io.File
 import java.net.NetworkInterface
 import java.security.SecureRandom
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class MainActivity : Activity() {
-
-    private lateinit var content: LinearLayout
-    private lateinit var statusText: TextView
-    private lateinit var addressText: TextView
-    private lateinit var pinText: TextView
-    private lateinit var qrImage: ImageView
-    private lateinit var mediaGrid: GridLayout
-    private lateinit var mediaCount: TextView
-    private lateinit var serverButton: TextView
+class MainActivity : ComponentActivity() {
 
     private var mediaServer: MediaServer? = null
-    private var accessPin = ""
-    private var localAddress: String? = null
+    private var accessPin by mutableStateOf("")
+    private var localAddress by mutableStateOf<String?>(null)
+    private var isSharing by mutableStateOf(false)
+    private var statusMessage by mutableStateOf("Starting your private sharing session…")
+    private var mediaFiles by mutableStateOf<List<File>>(emptyList())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = Color.rgb(8, 13, 23)
-        window.navigationBarColor = Color.rgb(8, 13, 23)
-        buildInterface()
+        window.statusBarColor = android.graphics.Color.rgb(15, 20, 28)
+        window.navigationBarColor = android.graphics.Color.rgb(15, 20, 28)
+
+        setContent {
+            FireShareTheme {
+                FireShareScreen(
+                    mediaFiles = mediaFiles,
+                    isSharing = isSharing,
+                    statusMessage = statusMessage,
+                    address = localAddress?.let { "http://" + it + ":" + MediaServer.PORT },
+                    accessPin = accessPin,
+                    onToggleSharing = {
+                        if (mediaServer == null) startSharing() else stopSharing()
+                    },
+                    onRefresh = { refreshLibrary() },
+                    onOpen = { file ->
+                        startActivity(
+                            android.content.Intent(this, MediaViewerActivity::class.java)
+                                .putExtra(MediaViewerActivity.EXTRA_NAME, file.name)
+                        )
+                    },
+                    onDelete = { file -> deleteMediaFile(file) }
+                )
+            }
+        }
+
         startSharing()
         refreshLibrary()
-    }
-
-    private fun buildInterface() {
-        val scroll = ScrollView(this).apply {
-            setBackgroundColor(Color.rgb(8, 13, 23))
-            isFillViewport = true
-            clipToPadding = false
-        }
-        content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(38), dp(26), dp(38), dp(40))
-        }
-        scroll.addView(content)
-        setContentView(scroll)
-
-        val header = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        val logo = TextView(this).apply {
-            text = "F"
-            textSize = 28f
-            setTextColor(Color.rgb(11, 20, 36))
-            gravity = Gravity.CENTER
-            typeface = Typeface.DEFAULT_BOLD
-            setBackgroundColor(Color.rgb(120, 169, 255))
-        }
-        header.addView(logo, LinearLayout.LayoutParams(dp(54), dp(54)))
-        val brand = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(15), 0, 0, 0)
-        }
-        brand.addView(label("FIRESHARE", 24f, Color.WHITE, true))
-        brand.addView(label("Your media, on the big screen", 14f, 0xFF9EABC0.toInt()))
-        header.addView(brand, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        header.addView(label("LOCAL WI-FI", 13f, 0xFF8AB4F8.toInt(), true))
-        content.addView(header)
-        addSpace(24)
-
-        val hero = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(26), dp(22), dp(26), dp(22))
-            background = roundedBackground(0xFF14243B.toInt(), 22)
-        }
-        val left = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-        left.addView(label("Send photos & videos to your TV", 29f, Color.WHITE, true))
-        addInto(left, dp(12))
-        left.addView(label(
-            "Open the address below on a phone or computer connected to the same Wi-Fi network. Uploads are saved on this Fire TV.",
-            16f,
-            0xFFBCC8D8.toInt()
-        ))
-        addInto(left, dp(18))
-        statusText = label("Starting your private sharing session…", 15f, 0xFF9FB4D2.toInt(), true)
-        left.addView(statusText)
-        addInto(left, dp(13))
-        addressText = label("Finding your TV address…", 23f, 0xFF8AB4F8.toInt(), true)
-        left.addView(addressText)
-        addInto(left, dp(6))
-        pinText = label("TV access PIN: ------", 17f, Color.WHITE, true)
-        left.addView(pinText)
-        addInto(left, dp(17))
-        val actions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        serverButton = actionButton("Stop sharing") {
-            if (mediaServer == null) startSharing() else stopSharing()
-        }
-        actions.addView(serverButton, LinearLayout.LayoutParams(dp(190), dp(52)))
-        val refreshButton = actionButton("Refresh library") { refreshLibrary() }
-        val refreshParams = LinearLayout.LayoutParams(dp(190), dp(52)).apply { leftMargin = dp(12) }
-        actions.addView(refreshButton, refreshParams)
-        left.addView(actions)
-        hero.addView(left, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-
-        val qrColumn = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(dp(18), dp(10), 0, dp(10))
-        }
-        qrImage = ImageView(this).apply {
-            setBackgroundColor(Color.WHITE)
-            scaleType = ImageView.ScaleType.FIT_CENTER
-            setPadding(dp(9), dp(9), dp(9), dp(9))
-            contentDescription = "Scan to open FireShare on your phone"
-        }
-        qrColumn.addView(qrImage, LinearLayout.LayoutParams(dp(210), dp(210)))
-        addInto(qrColumn, dp(8))
-        qrColumn.addView(label("SCAN TO CONNECT", 12f, 0xFFDCEBFF.toInt(), true))
-        hero.addView(qrColumn, LinearLayout.LayoutParams(dp(240), ViewGroup.LayoutParams.WRAP_CONTENT))
-        content.addView(hero)
-
-        addSpace(28)
-        val sectionHeader = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        sectionHeader.addView(label("Your library", 24f, Color.WHITE, true), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        mediaCount = label("0 ITEMS", 13f, 0xFF9EABC0.toInt(), true)
-        sectionHeader.addView(mediaCount)
-        content.addView(sectionHeader)
-        addSpace(7)
-        content.addView(label("Each item has separate Open and Delete controls. New uploads appear here automatically after you refresh.", 14f, 0xFF9EABC0.toInt()))
-        addSpace(15)
-
-        mediaGrid = GridLayout(this).apply {
-            columnCount = 4
-            alignmentMode = GridLayout.ALIGN_BOUNDS
-            useDefaultMargins = false
-        }
-        content.addView(mediaGrid, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        ))
-
-        addSpace(24)
-        val footer = label(
-            "REMOTE TIP  •  Use the directional pad to choose Open or Delete. Deleting asks for confirmation.",
-            13f,
-            0xFF75859D.toInt()
-        )
-        content.addView(footer)
     }
 
     private fun startSharing() {
         if (mediaServer != null) return
         try {
-            if (accessPin.isBlank()) accessPin = (SecureRandom().nextInt(900000) + 100000).toString()
+            if (accessPin.isBlank()) {
+                accessPin = (SecureRandom().nextInt(900000) + 100000).toString()
+            }
             val server = MediaServer(this, accessPin)
             server.start(5000, false)
             mediaServer = server
             localAddress = findLocalIpv4()
-            statusText.text = "Sharing is ON  •  Keep FireShare open while uploading"
-            addressText.text = localAddress?.let { "http://$it:${MediaServer.PORT}" }
-                ?: "Connect this TV to Wi-Fi"
-            pinText.text = "TV access PIN: $accessPin"
-            serverButton.text = "Stop sharing"
-            updateQr()
+            isSharing = true
+            statusMessage = if (localAddress == null) {
+                "Sharing is running. Connect this TV to Wi-Fi to show its address."
+            } else {
+                "Ready for uploads • Keep FireShare open while transferring"
+            }
         } catch (error: Exception) {
-            statusText.text = "Could not start sharing: ${error.message ?: "unknown error"}"
-            Toast.makeText(this, "Could not start the upload server.", Toast.LENGTH_LONG).show()
+            isSharing = false
+            statusMessage = "Could not start sharing: " + (error.message ?: "unknown error")
+            android.util.Log.e("FireShare", "Could not start sharing server", error)
         }
     }
 
     private fun stopSharing() {
         mediaServer?.stop()
         mediaServer = null
-        statusText.text = "Sharing is OFF  •  Start sharing to receive files"
-        addressText.text = "Upload server stopped"
-        qrImage.setImageDrawable(null)
-        serverButton.text = "Start sharing"
-    }
-
-    private fun updateQr() {
-        val ip = localAddress ?: return
-        val url = "http://$ip:${MediaServer.PORT}"
-        try {
-            val matrix = QRCodeWriter().encode(url, BarcodeFormat.QR_CODE, 300, 300)
-            val bitmap = Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888)
-            for (x in 0 until 300) {
-                for (y in 0 until 300) {
-                    bitmap.setPixel(x, y, if (matrix[x, y]) Color.BLACK else Color.WHITE)
-                }
-            }
-            qrImage.setImageBitmap(bitmap)
-        } catch (error: Exception) {
-            android.util.Log.w("FireShare", "QR generation failed", error)
-        }
+        isSharing = false
+        statusMessage = "Sharing is paused. Start sharing when you want to receive files."
     }
 
     private fun refreshLibrary() {
-        if (!::mediaGrid.isInitialized) return
         val directory = File(filesDir, "media").apply { mkdirs() }
-        val files = directory.listFiles()
-            ?.filter { it.isFile && it.length() > 0 }
+        mediaFiles = directory.listFiles()
+            ?.filter { it.isFile && it.length() > 0L }
             ?.sortedByDescending { it.lastModified() }
             ?: emptyList()
-
-        mediaGrid.removeAllViews()
-        mediaCount.text = "${files.size} ${if (files.size == 1) "ITEM" else "ITEMS"}"
-        if (files.isEmpty()) {
-            val empty = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER
-                setPadding(dp(24), dp(28), dp(24), dp(28))
-                background = roundedBackground(0xFF111C2C.toInt(), 16)
-            }
-            empty.addView(label("Your library is waiting", 20f, Color.WHITE, true))
-            addInto(empty, dp(7))
-            empty.addView(label("Upload a few photos or videos from your phone or computer to see them here.", 14f, 0xFF9EABC0.toInt()))
-            val lp = GridLayout.LayoutParams(
-                GridLayout.spec(GridLayout.UNDEFINED),
-                GridLayout.spec(0, 4)
-            ).apply {
-                width = 0
-                columnSpec = GridLayout.spec(0, 4, 1f)
-                setMargins(dp(2), dp(2), dp(2), dp(2))
-            }
-            mediaGrid.addView(empty, lp)
-            return
-        }
-
-        files.forEachIndexed { index, file ->
-            val tile = createMediaTile(file)
-            val row = index / 4
-            val column = index % 4
-            val params = GridLayout.LayoutParams(
-                GridLayout.spec(row, 1f),
-                GridLayout.spec(column, 1f)
-            ).apply {
-                width = 0
-                height = dp(212)
-                setMargins(dp(5), dp(5), dp(5), dp(5))
-            }
-            mediaGrid.addView(tile, params)
-        }
     }
 
-    private fun createMediaTile(file: File): View {
-        val tile = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(8), dp(8), dp(8), dp(8))
-            background = roundedBackground(0xFF111C2C.toInt(), 14)
-            isFocusable = false
-            isClickable = false
-        }
-
-        val preview = ImageView(this).apply {
-            scaleType = ImageView.ScaleType.CENTER_CROP
-            setBackgroundColor(0xFF0A111D.toInt())
-            val bitmap = createThumbnail(file)
-            if (bitmap != null) setImageBitmap(bitmap)
-            contentDescription = "Preview of ${file.name}"
-        }
-        tile.addView(preview, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            dp(104)
-        ))
-
-        val name = label(file.name, 13f, Color.WHITE, true).apply {
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            setPadding(dp(3), dp(6), dp(3), 0)
-        }
-        tile.addView(name, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        ))
-
-        val type = if (file.extension.lowercase(Locale.US) in VIDEO_EXTENSIONS) "VIDEO" else "PHOTO"
-        tile.addView(label(type, 10f, 0xFF8AB4F8.toInt(), true).apply {
-            setPadding(dp(3), dp(2), dp(3), 0)
-        })
-
-        val actions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        val openButton = mediaActionButton("Open", destructive = false) {
-            startActivity(Intent(this@MainActivity, MediaViewerActivity::class.java)
-                .putExtra(MediaViewerActivity.EXTRA_NAME, file.name))
-        }
-        actions.addView(openButton, LinearLayout.LayoutParams(0, dp(34), 1f))
-        val deleteButton = mediaActionButton("Delete", destructive = true) {
-            confirmDelete(file)
-        }
-        val deleteParams = LinearLayout.LayoutParams(0, dp(34), 1f).apply {
-            leftMargin = dp(6)
-        }
-        actions.addView(deleteButton, deleteParams)
-        tile.addView(actions, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            dp(34)
-        ).apply {
-            topMargin = dp(6)
-        })
-        return tile
-    }
-
-    private fun confirmDelete(file: File) {
-        val mediaDirectory = File(filesDir, "media").canonicalFile
-        val target = file.canonicalFile
-        if (target.parentFile != mediaDirectory || !target.isFile) {
-            Toast.makeText(this, "This item is no longer in your library.", Toast.LENGTH_SHORT).show()
-            refreshLibrary()
-            return
-        }
-
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("Delete this item?")
-            .setMessage("${file.name} will be permanently removed from this Fire TV.")
-            .setNegativeButton("Cancel", null)
-            .setPositiveButton("Delete") { _, _ ->
-                val current = File(mediaDirectory, file.name).canonicalFile
-                if (current.parentFile == mediaDirectory && current.isFile && current.delete()) {
-                    Toast.makeText(this, "Deleted ${file.name}", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "Could not delete this item.", Toast.LENGTH_LONG).show()
-                }
-                refreshLibrary()
-            }
-            .create()
-
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.requestFocus()
-        }
-        dialog.show()
-    }
-
-    private fun createThumbnail(file: File): Bitmap? {
+    private fun deleteMediaFile(file: File): Boolean {
         return try {
-            if (file.extension.lowercase(Locale.US) in VIDEO_EXTENSIONS) {
-                val retriever = android.media.MediaMetadataRetriever()
-                try {
-                    retriever.setDataSource(file.absolutePath)
-                    retriever.getFrameAtTime(1_000_000, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-                } finally {
-                    retriever.release()
-                }
-            } else {
-                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeFile(file.absolutePath, bounds)
-                var sample = 1
-                while (bounds.outWidth / sample > 520 || bounds.outHeight / sample > 360) sample *= 2
-                val options = BitmapFactory.Options().apply { inSampleSize = sample }
-                BitmapFactory.decodeFile(file.absolutePath, options)
-            }
+            val mediaDirectory = File(filesDir, "media").canonicalFile
+            val target = File(mediaDirectory, file.name).canonicalFile
+            val deleted = target.parentFile == mediaDirectory && target.isFile && target.delete()
+            refreshLibrary()
+            deleted
         } catch (error: Exception) {
-            android.util.Log.w("FireShare", "Could not create thumbnail for ${file.name}", error)
-            null
+            android.util.Log.e("FireShare", "Could not delete " + file.name, error)
+            false
         }
     }
 
@@ -402,74 +201,9 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun actionButton(title: String, action: () -> Unit): TextView {
-        return TextView(this).apply {
-            text = title
-            textSize = 15f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            background = getDrawable(R.drawable.card_focus)
-            isFocusable = true
-            isClickable = true
-            setPadding(dp(12), dp(10), dp(12), dp(10))
-            setOnClickListener { action() }
-        }
-    }
-
-    private fun mediaActionButton(
-        title: String,
-        destructive: Boolean,
-        action: () -> Unit
-    ): TextView {
-        return TextView(this).apply {
-            text = title
-            textSize = 12f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(if (destructive) 0xFFFFB7C1.toInt() else Color.WHITE)
-            gravity = Gravity.CENTER
-            background = getDrawable(if (destructive) R.drawable.delete_focus else R.drawable.card_focus)
-            isFocusable = true
-            isClickable = true
-            setPadding(dp(4), dp(4), dp(4), dp(4))
-            setOnClickListener { action() }
-        }
-    }
-
-    private fun label(
-        value: String,
-        size: Float,
-        color: Int,
-        bold: Boolean = false
-    ): TextView {
-        return TextView(this).apply {
-            text = value
-            setTextColor(color)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, size)
-            if (bold) typeface = Typeface.DEFAULT_BOLD
-        }
-    }
-
-    private fun addSpace(height: Int) {
-        content.addView(View(this), LinearLayout.LayoutParams(1, height))
-    }
-
-    private fun addInto(parent: LinearLayout, height: Int) {
-        parent.addView(View(this), LinearLayout.LayoutParams(1, height))
-    }
-
-    private fun roundedBackground(color: Int, radius: Int): android.graphics.drawable.Drawable {
-        return android.graphics.drawable.GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = dp(radius).toFloat()
-        }
-    }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
-
     override fun onResume() {
         super.onResume()
-        if (::mediaGrid.isInitialized) refreshLibrary()
+        refreshLibrary()
     }
 
     override fun onDestroy() {
@@ -477,8 +211,730 @@ class MainActivity : Activity() {
         mediaServer = null
         super.onDestroy()
     }
+}
 
-    companion object {
-        private val VIDEO_EXTENSIONS = setOf("mp4", "m4v", "mov", "mkv", "webm", "3gp", "mpeg", "mpg")
+@Composable
+fun FireShareTheme(content: @Composable () -> Unit) {
+    val context = LocalContext.current
+    val colors = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        runCatching { dynamicDarkColorScheme(context) }.getOrElse { FireShareDarkColors }
+    } else {
+        FireShareDarkColors
+    }
+    MaterialTheme(
+        colorScheme = colors,
+        content = content
+    )
+}
+
+private val FireShareDarkColors = darkColorScheme(
+    primary = Color(0xFFA8C7FA),
+    onPrimary = Color(0xFF0B305F),
+    primaryContainer = Color(0xFF294B78),
+    onPrimaryContainer = Color(0xFFD6E3FF),
+    secondary = Color(0xFFB8C8E2),
+    onSecondary = Color(0xFF23354F),
+    secondaryContainer = Color(0xFF344A67),
+    onSecondaryContainer = Color(0xFFD5E3FF),
+    background = Color(0xFF0F141C),
+    onBackground = Color(0xFFE1E6EF),
+    surface = Color(0xFF0F141C),
+    onSurface = Color(0xFFE1E6EF),
+    surfaceVariant = Color(0xFF252D3A),
+    onSurfaceVariant = Color(0xFFC2CAD7),
+    outline = Color(0xFF8994A5),
+    outlineVariant = Color(0xFF414B5A),
+    inverseSurface = Color(0xFFE1E6EF),
+    inverseOnSurface = Color(0xFF252D3A),
+    inversePrimary = Color(0xFF365F98),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6)
+)
+
+private enum class MediaFilter { ALL, PHOTOS, VIDEOS }
+
+@Composable
+private fun FireShareScreen(
+    mediaFiles: List<File>,
+    isSharing: Boolean,
+    statusMessage: String,
+    address: String?,
+    accessPin: String,
+    onToggleSharing: () -> Unit,
+    onRefresh: () -> Unit,
+    onOpen: (File) -> Unit,
+    onDelete: (File) -> Boolean
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var filter by remember { mutableStateOf(MediaFilter.ALL) }
+    var pendingDelete by remember { mutableStateOf<File?>(null) }
+    val cancelFocusRequester = remember { FocusRequester() }
+
+    val visibleFiles = remember(mediaFiles, filter) {
+        mediaFiles.filter { file ->
+            when (filter) {
+                MediaFilter.ALL -> true
+                MediaFilter.PHOTOS -> !isVideoFile(file)
+                MediaFilter.VIDEOS -> isVideoFile(file)
+            }
+        }
+    }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(18.dp)
+            )
+        }
+    ) { insets ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(insets)
+                .padding(horizontal = 30.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            HeaderBar(isSharing = isSharing)
+
+            UploadPanel(
+                isSharing = isSharing,
+                statusMessage = statusMessage,
+                address = address,
+                accessPin = accessPin,
+                onToggleSharing = onToggleSharing,
+                onRefresh = onRefresh,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(224.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Your library",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "Media saved on this Fire TV",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(
+                    text = mediaFiles.size.toString() + if (mediaFiles.size == 1) " ITEM" else " ITEMS",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusGroup(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = filter == MediaFilter.ALL,
+                    onClick = { filter = MediaFilter.ALL },
+                    label = { Text("All media") },
+                    modifier = Modifier.tvFocusRing(RoundedCornerShape(50))
+                )
+                FilterChip(
+                    selected = filter == MediaFilter.PHOTOS,
+                    onClick = { filter = MediaFilter.PHOTOS },
+                    label = { Text("Photos") },
+                    modifier = Modifier.tvFocusRing(RoundedCornerShape(50))
+                )
+                FilterChip(
+                    selected = filter == MediaFilter.VIDEOS,
+                    onClick = { filter = MediaFilter.VIDEOS },
+                    label = { Text("Videos") },
+                    modifier = Modifier.tvFocusRing(RoundedCornerShape(50))
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = visibleFiles.size.toString() + " shown",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (visibleFiles.isEmpty()) {
+                EmptyLibrary(
+                    isFiltered = filter != MediaFilter.ALL,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                )
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 205.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentPadding = PaddingValues(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(visibleFiles, key = { it.name }) { file ->
+                        MediaGridCard(
+                            file = file,
+                            onOpen = { onOpen(file) },
+                            onDelete = { pendingDelete = file }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (pendingDelete != null) {
+        val file = pendingDelete!!
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            icon = {
+                Icon(
+                    imageVector = Icons.Rounded.DeleteOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = { Text("Delete this item?") },
+            text = {
+                Text(
+                    "“" + file.name + "” will be permanently removed from this Fire TV."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val deleted = onDelete(file)
+                        pendingDelete = null
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(
+                                if (deleted) "Item deleted from your TV"
+                                else "Could not delete this item"
+                            )
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier.tvFocusRing(RoundedCornerShape(50))
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { pendingDelete = null },
+                    modifier = Modifier
+                        .focusRequester(cancelFocusRequester)
+                        .tvFocusRing(RoundedCornerShape(50))
+                ) {
+                    Text("Cancel")
+                }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
+        LaunchedEffect(pendingDelete) {
+            cancelFocusRequester.requestFocus()
+        }
+    }
+}
+
+@Composable
+private fun HeaderBar(isSharing: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(54.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            shape = RoundedCornerShape(17.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(48.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Rounded.Tv,
+                    contentDescription = null,
+                    modifier = Modifier.size(27.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(13.dp))
+        Column {
+            Text(
+                text = "FireShare",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Your media, on the big screen",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = if (isSharing) MaterialTheme.colorScheme.secondaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 15.dp, vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (isSharing) Icons.Rounded.CheckCircle else Icons.Rounded.Wifi,
+                    contentDescription = null,
+                    tint = if (isSharing) MaterialTheme.colorScheme.onSecondaryContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(17.dp)
+                )
+                Spacer(modifier = Modifier.width(7.dp))
+                Text(
+                    text = if (isSharing) "Sharing is on" else "Sharing is off",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (isSharing) MaterialTheme.colorScheme.onSecondaryContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun UploadPanel(
+    isSharing: Boolean,
+    statusMessage: String,
+    address: String?,
+    accessPin: String,
+    onToggleSharing: () -> Unit,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val qrBitmap = remember(address) {
+        address?.let { createQrBitmap(it) }?.asImageBitmap()
+    }
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Send it to the big screen",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Upload photos and videos from a phone or computer on the same Wi-Fi.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = statusMessage,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "OPEN IN YOUR BROWSER",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = address ?: "Connect Fire TV to Wi-Fi",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(18.dp))
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "TV PIN",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = if (accessPin.isBlank()) "------" else accessPin,
+                                style = MaterialTheme.typography.titleLarge,
+                                letterSpacing = 2.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.focusGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = onToggleSharing,
+                        modifier = Modifier
+                            .height(42.dp)
+                            .tvFocusRing(RoundedCornerShape(50)),
+                        contentPadding = PaddingValues(horizontal = 18.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isSharing) Icons.Rounded.StopCircle else Icons.Rounded.CloudUpload,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(if (isSharing) "Stop sharing" else "Start sharing")
+                    }
+                    OutlinedButton(
+                        onClick = onRefresh,
+                        modifier = Modifier
+                            .height(42.dp)
+                            .tvFocusRing(RoundedCornerShape(50)),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(7.dp))
+                        Text("Refresh")
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier.width(176.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color.White,
+                    modifier = Modifier.size(146.dp)
+                ) {
+                    if (qrBitmap != null) {
+                        Image(
+                            bitmap = qrBitmap,
+                            contentDescription = "Scan to open the FireShare upload page",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(9.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        Box(contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = "SCAN TO CONNECT",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyLibrary(isFiltered: Boolean, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(26.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Surface(
+                shape = RoundedCornerShape(22.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                modifier = Modifier.size(64.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (isFiltered) Icons.Rounded.Collections else Icons.Rounded.CloudUpload,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(31.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = if (isFiltered) "No matching media" else "Your library is ready for memories",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(5.dp))
+            Text(
+                text = if (isFiltered) "Try another filter to see your files."
+                else "Scan the QR code above to send photos and videos to this TV.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun MediaGridCard(
+    file: File,
+    onOpen: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val thumbnail by produceState<Bitmap?>(
+        initialValue = null,
+        key1 = file.absolutePath,
+        key2 = file.lastModified()
+    ) {
+        value = withContext(Dispatchers.IO) { createMediaThumbnail(file) }
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(206.dp),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.68f)
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(105.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(MaterialTheme.colorScheme.surface),
+                contentAlignment = Alignment.Center
+            ) {
+                if (thumbnail != null) {
+                    Image(
+                        bitmap = thumbnail!!.asImageBitmap(),
+                        contentDescription = file.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = if (isVideoFile(file)) Icons.Rounded.Movie else Icons.Rounded.Image,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(38.dp)
+                    )
+                }
+                if (isVideoFile(file)) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(8.dp),
+                        shape = RoundedCornerShape(50),
+                        color = Color.Black.copy(alpha = 0.72f),
+                        contentColor = Color.White
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.PlayArrow,
+                            contentDescription = "Video",
+                            modifier = Modifier.padding(5.dp).size(17.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = file.name,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = (if (isVideoFile(file)) "VIDEO" else "PHOTO") + "  •  " + formatFileSize(file.length()),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusGroup(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                androidx.compose.material3.FilledTonalButton(
+                    onClick = onOpen,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp)
+                        .tvFocusRing(RoundedCornerShape(50)),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(17.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Open", fontSize = 12.sp)
+                }
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier
+                        .size(38.dp)
+                        .tvFocusRing(RoundedCornerShape(50))
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.DeleteOutline,
+                        contentDescription = "Delete " + file.name,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Modifier.tvFocusRing(shape: Shape): Modifier {
+    var focused by remember { mutableStateOf(false) }
+    return this
+        .onFocusChanged { focused = it.isFocused }
+        .then(
+            if (focused) Modifier.border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.primary,
+                shape = shape
+            ) else Modifier
+        )
+}
+
+private fun createQrBitmap(value: String): Bitmap? {
+    return try {
+        val size = 320
+        val matrix = QRCodeWriter().encode(value, BarcodeFormat.QR_CODE, size, size)
+        Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888).apply {
+            for (x in 0 until size) {
+                for (y in 0 until size) {
+                    setPixel(x, y, if (matrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+                }
+            }
+        }
+    } catch (error: Exception) {
+        android.util.Log.w("FireShare", "Could not create QR code", error)
+        null
+    }
+}
+
+private fun createMediaThumbnail(file: File): Bitmap? {
+    return try {
+        if (isVideoFile(file)) {
+            val retriever = android.media.MediaMetadataRetriever()
+            try {
+                retriever.setDataSource(file.absolutePath)
+                retriever.getFrameAtTime(
+                    1_000_000,
+                    android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+                )
+            } finally {
+                retriever.release()
+            }
+        } else {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(file.absolutePath, bounds)
+            var sample = 1
+            while (bounds.outWidth / sample > 520 || bounds.outHeight / sample > 360) {
+                sample *= 2
+            }
+            val options = BitmapFactory.Options().apply { inSampleSize = sample }
+            BitmapFactory.decodeFile(file.absolutePath, options)
+        }
+    } catch (error: Exception) {
+        android.util.Log.w("FireShare", "Could not create thumbnail for " + file.name, error)
+        null
+    }
+}
+
+private fun isVideoFile(file: File): Boolean {
+    return file.extension.lowercase(Locale.US) in setOf(
+        "mp4", "m4v", "mov", "mkv", "webm", "3gp", "mpeg", "mpg"
+    )
+}
+
+private fun formatFileSize(bytes: Long): String {
+    return when {
+        bytes < 1024L -> bytes.toString() + " B"
+        bytes < 1024L * 1024L -> String.format(Locale.US, "%.0f KB", bytes / 1024.0)
+        bytes < 1024L * 1024L * 1024L -> String.format(Locale.US, "%.1f MB", bytes / (1024.0 * 1024.0))
+        else -> String.format(Locale.US, "%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
     }
 }

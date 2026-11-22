@@ -4,12 +4,14 @@ FireShare is a local-first media hub for Amazon Fire TV. It lets you upload phot
 
 ## Features
 
-- Native Android TV / Fire TV interface designed for a remote control.
+- Native Android TV / Fire TV interface built with Google's Jetpack Compose Material 3 components and designed for a remote control.
+- Material You dark color system with dynamic Android colors where available and a Google Blue fallback theme.
 - Built-in local Wi-Fi upload page with a QR code and a one-time six-digit PIN.
 - Multi-file photo and video uploads from a phone or PC browser.
 - Media library stored privately in the app's storage on the Fire TV.
 - Photo viewing and video playback.
 - Open and delete controls directly on each TV library item, with a confirmation before permanent deletion.
+- Material 3 photo and video viewing screens with remote-friendly back navigation.
 - Delete files from the TV in the browser upload page or directly with the Fire TV remote.
 - No cloud account and no third-party media hosting.
 
