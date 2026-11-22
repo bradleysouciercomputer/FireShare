@@ -1,6 +1,7 @@
 package com.fireshare.tv
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -152,7 +153,7 @@ class MainActivity : Activity() {
         sectionHeader.addView(mediaCount)
         content.addView(sectionHeader)
         addSpace(7)
-        content.addView(label("Select any photo or video to open it. New uploads appear here automatically after you refresh.", 14f, 0xFF9EABC0.toInt()))
+        content.addView(label("Each item has separate Open and Delete controls. New uploads appear here automatically after you refresh.", 14f, 0xFF9EABC0.toInt()))
         addSpace(15)
 
         mediaGrid = GridLayout(this).apply {
@@ -167,7 +168,7 @@ class MainActivity : Activity() {
 
         addSpace(24)
         val footer = label(
-            "REMOTE TIP  •  Use the directional pad to move, Select to open, and Back to return.",
+            "REMOTE TIP  •  Use the directional pad to choose Open or Delete. Deleting asks for confirmation.",
             13f,
             0xFF75859D.toInt()
         )
@@ -261,7 +262,7 @@ class MainActivity : Activity() {
                 GridLayout.spec(column, 1f)
             ).apply {
                 width = 0
-                height = dp(184)
+                height = dp(212)
                 setMargins(dp(5), dp(5), dp(5), dp(5))
             }
             mediaGrid.addView(tile, params)
@@ -272,40 +273,92 @@ class MainActivity : Activity() {
         val tile = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(9), dp(9), dp(9), dp(9))
-            background = getDrawable(R.drawable.card_focus)
-            isFocusable = true
-            isClickable = true
-            contentDescription = "Open ${file.name}"
-            setOnClickListener {
-                startActivity(Intent(this@MainActivity, MediaViewerActivity::class.java)
-                    .putExtra(MediaViewerActivity.EXTRA_NAME, file.name))
-            }
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            background = roundedBackground(0xFF111C2C.toInt(), 14)
+            isFocusable = false
+            isClickable = false
         }
+
         val preview = ImageView(this).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             setBackgroundColor(0xFF0A111D.toInt())
             val bitmap = createThumbnail(file)
             if (bitmap != null) setImageBitmap(bitmap)
+            contentDescription = "Preview of ${file.name}"
         }
         tile.addView(preview, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
-            dp(123)
+            dp(104)
         ))
+
         val name = label(file.name, 13f, Color.WHITE, true).apply {
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
-            setPadding(dp(3), dp(8), dp(3), 0)
+            setPadding(dp(3), dp(6), dp(3), 0)
         }
         tile.addView(name, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
         ))
+
         val type = if (file.extension.lowercase(Locale.US) in VIDEO_EXTENSIONS) "VIDEO" else "PHOTO"
         tile.addView(label(type, 10f, 0xFF8AB4F8.toInt(), true).apply {
-            setPadding(dp(3), dp(3), dp(3), 0)
+            setPadding(dp(3), dp(2), dp(3), 0)
+        })
+
+        val actions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val openButton = mediaActionButton("Open", destructive = false) {
+            startActivity(Intent(this@MainActivity, MediaViewerActivity::class.java)
+                .putExtra(MediaViewerActivity.EXTRA_NAME, file.name))
+        }
+        actions.addView(openButton, LinearLayout.LayoutParams(0, dp(34), 1f))
+        val deleteButton = mediaActionButton("Delete", destructive = true) {
+            confirmDelete(file)
+        }
+        val deleteParams = LinearLayout.LayoutParams(0, dp(34), 1f).apply {
+            leftMargin = dp(6)
+        }
+        actions.addView(deleteButton, deleteParams)
+        tile.addView(actions, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            dp(34)
+        ).apply {
+            topMargin = dp(6)
         })
         return tile
+    }
+
+    private fun confirmDelete(file: File) {
+        val mediaDirectory = File(filesDir, "media").canonicalFile
+        val target = file.canonicalFile
+        if (target.parentFile != mediaDirectory || !target.isFile) {
+            Toast.makeText(this, "This item is no longer in your library.", Toast.LENGTH_SHORT).show()
+            refreshLibrary()
+            return
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Delete this item?")
+            .setMessage("${file.name} will be permanently removed from this Fire TV.")
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Delete") { _, _ ->
+                val current = File(mediaDirectory, file.name).canonicalFile
+                if (current.parentFile == mediaDirectory && current.isFile && current.delete()) {
+                    Toast.makeText(this, "Deleted ${file.name}", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Could not delete this item.", Toast.LENGTH_LONG).show()
+                }
+                refreshLibrary()
+            }
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.requestFocus()
+        }
+        dialog.show()
     }
 
     private fun createThumbnail(file: File): Bitmap? {
@@ -360,6 +413,25 @@ class MainActivity : Activity() {
             isFocusable = true
             isClickable = true
             setPadding(dp(12), dp(10), dp(12), dp(10))
+            setOnClickListener { action() }
+        }
+    }
+
+    private fun mediaActionButton(
+        title: String,
+        destructive: Boolean,
+        action: () -> Unit
+    ): TextView {
+        return TextView(this).apply {
+            text = title
+            textSize = 12f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(if (destructive) 0xFFFFB7C1.toInt() else Color.WHITE)
+            gravity = Gravity.CENTER
+            background = getDrawable(if (destructive) R.drawable.delete_focus else R.drawable.card_focus)
+            isFocusable = true
+            isClickable = true
+            setPadding(dp(4), dp(4), dp(4), dp(4))
             setOnClickListener { action() }
         }
     }
