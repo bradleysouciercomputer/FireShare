@@ -6,10 +6,12 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,10 +25,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.ImageVector
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Collections
 import androidx.compose.material.icons.rounded.CloudUpload
@@ -46,8 +48,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.OutlinedButton
@@ -73,7 +75,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
@@ -233,6 +234,47 @@ fun FireShareTheme(content: @Composable () -> Unit) {
 
 private val TvControlShape: Shape = RoundedCornerShape(50)
 
+@Composable
+private fun tvFocusBorder(
+    interactionSource: MutableInteractionSource,
+    idleBorder: BorderStroke? = null
+): BorderStroke? {
+    val focused by interactionSource.collectIsFocusedAsState()
+    return if (focused) {
+        BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+    } else {
+        idleBorder
+    }
+}
+
+@Composable
+internal fun FireShareTvIconButton(
+    onClick: () -> Unit,
+    imageVector: ImageVector,
+    contentDescription: String,
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    Surface(
+        onClick = onClick,
+        modifier = modifier.size(48.dp),
+        shape = CircleShape,
+        color = Color.Transparent,
+        contentColor = tint,
+        border = tvFocusBorder(interactionSource),
+        interactionSource = interactionSource
+    ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = imageVector,
+                contentDescription = contentDescription,
+                tint = tint
+            )
+        }
+    }
+}
+
 private val FireShareDarkColors = darkColorScheme(
     primary = Color(0xFFA8C7FA),
     onPrimary = Color(0xFF0B305F),
@@ -350,26 +392,50 @@ private fun FireShareScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val allMediaSource = remember { MutableInteractionSource() }
+                val photosSource = remember { MutableInteractionSource() }
+                val videosSource = remember { MutableInteractionSource() }
                 FilterChip(
                     selected = filter == MediaFilter.ALL,
                     onClick = { filter = MediaFilter.ALL },
                     label = { Text("All media") },
-                    modifier = Modifier.tvFocusRing(TvControlShape),
-                    shape = TvControlShape
+                    shape = TvControlShape,
+                    border = tvFocusBorder(
+                        allMediaSource,
+                        FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = filter == MediaFilter.ALL
+                        )
+                    ),
+                    interactionSource = allMediaSource
                 )
                 FilterChip(
                     selected = filter == MediaFilter.PHOTOS,
                     onClick = { filter = MediaFilter.PHOTOS },
                     label = { Text("Photos") },
-                    modifier = Modifier.tvFocusRing(TvControlShape),
-                    shape = TvControlShape
+                    shape = TvControlShape,
+                    border = tvFocusBorder(
+                        photosSource,
+                        FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = filter == MediaFilter.PHOTOS
+                        )
+                    ),
+                    interactionSource = photosSource
                 )
                 FilterChip(
                     selected = filter == MediaFilter.VIDEOS,
                     onClick = { filter = MediaFilter.VIDEOS },
                     label = { Text("Videos") },
-                    modifier = Modifier.tvFocusRing(TvControlShape),
-                    shape = TvControlShape
+                    shape = TvControlShape,
+                    border = tvFocusBorder(
+                        videosSource,
+                        FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = filter == MediaFilter.VIDEOS
+                        )
+                    ),
+                    interactionSource = videosSource
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
@@ -432,6 +498,7 @@ private fun FireShareScreen(
                 )
             },
             confirmButton = {
+                val deleteActionSource = remember { MutableInteractionSource() }
                 TextButton(
                     onClick = {
                         val deleted = onDelete(file)
@@ -446,19 +513,21 @@ private fun FireShareScreen(
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     ),
-                    modifier = Modifier.tvFocusRing(TvControlShape),
-                    shape = TvControlShape
+                    shape = TvControlShape,
+                    border = tvFocusBorder(deleteActionSource),
+                    interactionSource = deleteActionSource
                 ) {
                     Text("Delete")
                 }
             },
             dismissButton = {
+                val cancelActionSource = remember { MutableInteractionSource() }
                 TextButton(
                     onClick = { pendingDelete = null },
-                    modifier = Modifier
-                        .focusRequester(cancelFocusRequester)
-                        .tvFocusRing(TvControlShape),
-                    shape = TvControlShape
+                    modifier = Modifier.focusRequester(cancelFocusRequester),
+                    shape = TvControlShape,
+                    border = tvFocusBorder(cancelActionSource),
+                    interactionSource = cancelActionSource
                 ) {
                     Text("Cancel")
                 }
@@ -637,12 +706,13 @@ private fun UploadPanel(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val startSharingSource = remember { MutableInteractionSource() }
                     Button(
                         onClick = onToggleSharing,
-                        modifier = Modifier
-                            .height(42.dp)
-                            .tvFocusRing(TvControlShape),
+                        modifier = Modifier.height(42.dp),
                         shape = TvControlShape,
+                        border = tvFocusBorder(startSharingSource),
+                        interactionSource = startSharingSource,
                         contentPadding = PaddingValues(horizontal = 18.dp)
                     ) {
                         Icon(
@@ -653,12 +723,16 @@ private fun UploadPanel(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(if (isSharing) "Stop sharing" else "Start sharing")
                     }
+                    val refreshSource = remember { MutableInteractionSource() }
                     OutlinedButton(
                         onClick = onRefresh,
-                        modifier = Modifier
-                            .height(42.dp)
-                            .tvFocusRing(TvControlShape),
+                        modifier = Modifier.height(42.dp),
                         shape = TvControlShape,
+                        border = tvFocusBorder(
+                            refreshSource,
+                            ButtonDefaults.outlinedButtonBorder(enabled = true)
+                        ),
+                        interactionSource = refreshSource,
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         Icon(
@@ -852,13 +926,15 @@ private fun MediaGridCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(7.dp)
             ) {
+                val openSource = remember { MutableInteractionSource() }
                 androidx.compose.material3.FilledTonalButton(
                     onClick = onOpen,
                     modifier = Modifier
                         .weight(1f)
-                        .height(36.dp)
-                        .tvFocusRing(TvControlShape),
+                        .height(36.dp),
                     shape = TvControlShape,
+                    border = tvFocusBorder(openSource),
+                    interactionSource = openSource,
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                 ) {
                     Icon(
@@ -869,35 +945,15 @@ private fun MediaGridCard(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Open", fontSize = 12.sp)
                 }
-                IconButton(
+                FireShareTvIconButton(
                     onClick = onDelete,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .tvFocusRing(CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.DeleteOutline,
-                        contentDescription = "Delete " + file.name,
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
+                    imageVector = Icons.Rounded.DeleteOutline,
+                    contentDescription = "Delete " + file.name,
+                    tint = MaterialTheme.colorScheme.error
+                )
             }
         }
     }
-}
-
-@Composable
-internal fun Modifier.tvFocusRing(shape: Shape): Modifier {
-    var focused by remember { mutableStateOf(false) }
-    return this
-        .onFocusChanged { focused = it.isFocused }
-        .then(
-            if (focused) Modifier.border(
-                width = 2.dp,
-                color = MaterialTheme.colorScheme.primary,
-                shape = shape
-            ) else Modifier
-        )
 }
 
 private fun createQrBitmap(value: String): Bitmap? {
