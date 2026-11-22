@@ -21,14 +21,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -112,12 +110,12 @@ private fun FireShareMediaViewer(
                         .padding(horizontal = 22.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.tvFocusRing(CircleShape)) {
-                        Icon(
-                            imageVector = Icons.Rounded.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
+                    FireShareTvIconButton(
+                        onClick = onBack,
+                        imageVector = Icons.Rounded.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
                     Spacer(modifier = Modifier.width(12.dp))
                     Icon(
                         imageVector = if (isVideo) Icons.Rounded.Movie else Icons.Rounded.Image,
