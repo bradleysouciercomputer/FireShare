@@ -887,7 +887,7 @@ private fun MediaGridCard(
 }
 
 @Composable
-private fun Modifier.tvFocusRing(shape: Shape): Modifier {
+internal fun Modifier.tvFocusRing(shape: Shape): Modifier {
     var focused by remember { mutableStateOf(false) }
     return this
         .onFocusChanged { focused = it.isFocused }
