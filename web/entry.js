@@ -51,7 +51,7 @@ document.adoptedStyleSheets.push(typeScaleStyles.styleSheet);
 
   async function connect() {
     pin = String(pinInput.value || '').trim();
-    if (!/^\\d{6}$/.test(pin)) {
+    if (!/^\d{6}$/.test(pin)) {
       setStatus(connectStatus, 'Enter the six-digit PIN displayed on your TV.', 'error');
       return;
     }
