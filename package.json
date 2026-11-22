@@ -1,0 +1,15 @@
+{
+  "name": "fireshare-material-web",
+  "private": true,
+  "version": "1.3.0",
+  "scripts": {
+    "build:web": "rollup -p @rollup/plugin-node-resolve web/entry.js --file app/src/main/assets/upload/app.js --format es"
+  },
+  "dependencies": {
+    "@material/web": "2.5.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "rollup": "^4.34.8"
+  }
+}

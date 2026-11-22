@@ -22,6 +22,7 @@ class MediaServer(
         return try {
             when {
                 session.method == Method.GET && session.uri == "/" -> uploadPage()
+                session.method == Method.GET && session.uri == "/app.js" -> uploadScript()
                 session.method == Method.GET && session.uri == "/health" ->
                     textResponse(Response.Status.OK, "FireShare is ready")
                 session.method == Method.GET && session.uri == "/api/media" -> {
@@ -159,6 +160,20 @@ class MediaServer(
             .bufferedReader()
             .use { it.readText() }
         return newFixedLengthResponse(Response.Status.OK, "text/html; charset=utf-8", html)
+    }
+
+    private fun uploadScript(): Response {
+        val script = appContext.assets.open("upload/app.js")
+            .bufferedReader()
+            .use { it.readText() }
+        return newFixedLengthResponse(
+            Response.Status.OK,
+            "text/javascript; charset=utf-8",
+            script
+        ).apply {
+            addHeader("Cache-Control", "no-store")
+            addHeader("X-Content-Type-Options", "nosniff")
+        }
     }
 
     private fun uniqueDestination(name: String): File {

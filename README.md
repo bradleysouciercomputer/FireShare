@@ -6,7 +6,7 @@ FireShare is a local-first media hub for Amazon Fire TV. It lets you upload phot
 
 - Native Android TV / Fire TV interface built with Google's Jetpack Compose Material 3 components and designed for a remote control.
 - Material You dark color system with dynamic Android colors where available and a Google Blue fallback theme.
-- Built-in local Wi-Fi upload page with a QR code and a one-time six-digit PIN.
+- Built-in local Wi-Fi upload page using Google's official Material Web (Material 3) components, with a QR code and a one-time six-digit PIN.
 - Multi-file photo and video uploads from a phone or PC browser.
 - Media library stored privately in the app's storage on the Fire TV.
 - Photo viewing and video playback.
@@ -43,13 +43,15 @@ Uploads are saved in FireShare's private app storage on the Fire TV. Keep FireSh
 
 The repository includes a GitHub Actions workflow at `.github/workflows/android.yml`.
 
-- Every push to `main` builds a debug APK and uploads a 30-day Actions artifact.
+- Every push to `main` bundles the official Material Web upload interface, builds a debug APK, and uploads a 30-day Actions artifact.
 - Successful builds on `main` also update the rolling **latest** GitHub Release.
 - Pushing a version tag such as `v1.0.1` creates a versioned release.
 
-The APK is built with the Android Gradle Plugin and Kotlin. To build locally, install JDK 17, Android SDK platform 35, and Gradle 8.9, then run:
+The APK is built with the Android Gradle Plugin, Kotlin, Jetpack Compose Material 3, and an npm-bundled Material Web upload page. To build locally, install Node.js 20, JDK 17, Android SDK platform 35, and Gradle 8.9, then run:
 
 ```bash
+npm install
+npm run build:web
 gradle assembleDebug
 ```
 

@@ -3,258 +3,384 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1424">
+  <meta name="theme-color" content="#10151d">
   <title>FireShare · Send to TV</title>
   <style>
-    :root { color-scheme: dark; --bg:#0b1424; --panel:#14243b; --line:#243650; --text:#f4f7fc; --muted:#a5b3c7; --blue:#8ab4f8; --blue2:#477cc4; }
-    * { box-sizing:border-box; }
-    body { margin:0; min-height:100vh; padding:34px 18px 58px; background:radial-gradient(900px 500px at 90% -10%,#203b60 0%,transparent 60%),var(--bg); color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
-    main { width:min(880px,100%); margin:0 auto; }
-    header { display:flex; align-items:center; gap:14px; margin-bottom:30px; }
-    .logo { width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:var(--blue);color:#0b1424;font-weight:900;font-size:27px; }
-    h1 { font-size:24px; margin:0; letter-spacing:-.4px; }
-    header p { margin:3px 0 0;color:var(--muted);font-size:14px; }
-    .panel { padding:24px; border:1px solid var(--line); border-radius:22px; background:linear-gradient(145deg,rgba(27,47,73,.96),rgba(17,30,49,.96)); box-shadow:0 18px 50px #0003; margin-bottom:18px; }
-    h2 { font-size:19px;margin:0 0 8px; }
-    .muted {color:var(--muted);line-height:1.55;margin:0 0 18px;font-size:14px;}
-    label {display:block;font-size:13px;font-weight:700;margin:16px 0 8px;color:#d9e5f5;}
-    input[type=password] {width:100%;height:48px;border:1px solid #405674;border-radius:12px;background:#0d192a;color:white;padding:0 14px;font-size:17px;letter-spacing:3px;outline:none;}
-    input:focus {border-color:var(--blue);box-shadow:0 0 0 3px #8ab4f82a;}
-    .drop {display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:170px;border:1.5px dashed #56749a;border-radius:17px;background:#0d1a2a88;text-align:center;padding:22px;cursor:pointer;transition:.15s;}
-    .drop.drag {background:#24466d; border-color:var(--blue);}
-    .upload-icon {font-size:30px;margin-bottom:8px;}
-    .drop strong {font-size:16px;}
-    .drop span {font-size:13px;color:var(--muted);margin-top:5px;}
-    input[type=file] {position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
-    button {border:0;border-radius:12px;background:var(--blue);color:#0b1424;font-weight:800;font-size:14px;padding:13px 18px;cursor:pointer;}
-    button:disabled {opacity:.45;cursor:wait;}
-    button.secondary {background:#263c59;color:#edf4ff;border:1px solid #405674;}
-    .actions {display:flex;gap:10px;flex-wrap:wrap;margin-top:15px;}
-    .status {font-size:13px;color:var(--muted);min-height:20px;margin-top:12px;}
-    .progress {height:6px;background:#0a1422;border-radius:9px;overflow:hidden;margin-top:10px;display:none;}
-    .progress div {height:100%;width:0;background:var(--blue);transition:width .2s;}
-    .library-head {display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;}
-    .library-head h2 {margin:0;}
-    .count {font-size:12px;color:var(--muted);font-weight:800;letter-spacing:.8px;}
-    .grid {display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px;}
-    .media {min-width:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#0e1a2b;}
-    .preview {height:120px;background:#08111e;display:grid;place-items:center;overflow:hidden;}
-    .preview img,.preview video {width:100%;height:100%;object-fit:cover;}
-    .file-icon {font-size:34px;}
-    .meta {padding:11px;}
-    .filename {font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;}
-    .size {font-size:11px;color:var(--muted);margin-top:4px;}
-    .delete {width:100%;border-radius:8px;margin-top:9px;padding:8px;background:#352332;color:#ffdce5;font-size:12px;}
-    .empty {padding:24px;text-align:center;border:1px dashed var(--line);border-radius:14px;color:var(--muted);font-size:14px;}
-    .foot {text-align:center;color:#71839c;font-size:12px;margin-top:25px;}
-    @media(max-width:540px){body{padding:22px 13px 40px}.panel{padding:18px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    :root {
+      color-scheme: dark;
+      --md-sys-color-primary: #a8c7fa;
+      --md-sys-color-on-primary: #0b305f;
+      --md-sys-color-primary-container: #294b78;
+      --md-sys-color-on-primary-container: #d6e3ff;
+      --md-sys-color-secondary: #b8c8e2;
+      --md-sys-color-on-secondary: #23354f;
+      --md-sys-color-secondary-container: #344a67;
+      --md-sys-color-on-secondary-container: #d5e3ff;
+      --md-sys-color-background: #10151d;
+      --md-sys-color-on-background: #e1e6ef;
+      --md-sys-color-surface: #10151d;
+      --md-sys-color-surface-dim: #10151d;
+      --md-sys-color-surface-bright: #363d48;
+      --md-sys-color-surface-container-lowest: #0b0f15;
+      --md-sys-color-surface-container-low: #191f28;
+      --md-sys-color-surface-container: #1d242e;
+      --md-sys-color-surface-container-high: #272f3a;
+      --md-sys-color-surface-container-highest: #323a46;
+      --md-sys-color-on-surface: #e1e6ef;
+      --md-sys-color-on-surface-variant: #c2cad7;
+      --md-sys-color-outline: #8994a5;
+      --md-sys-color-outline-variant: #414b5a;
+      --md-sys-color-error: #ffb4ab;
+      --md-sys-color-on-error: #690005;
+      --md-sys-color-error-container: #93000a;
+      --md-sys-color-on-error-container: #ffdad6;
+      --md-sys-color-inverse-surface: #e1e6ef;
+      --md-sys-color-inverse-on-surface: #252d3a;
+      --md-sys-color-inverse-primary: #365f98;
+      --page-width: 980px;
+      font-family: Roboto, "Segoe UI", Arial, sans-serif;
+      background: var(--md-sys-color-background);
+      color: var(--md-sys-color-on-background);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 30px 18px 52px;
+      background:
+        radial-gradient(920px 520px at 100% -12%, rgba(54,95,152,.3), transparent 65%),
+        var(--md-sys-color-background);
+      color: var(--md-sys-color-on-background);
+    }
+    main { width: min(var(--page-width), 100%); margin: 0 auto; }
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin: 0 0 26px;
+    }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 52px;
+      height: 52px;
+      flex: 0 0 52px;
+      border-radius: 17px;
+      color: var(--md-sys-color-on-primary-container);
+      background: var(--md-sys-color-primary-container);
+      font-size: 25px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+    .brand-copy { min-width: 0; flex: 1; }
+    .brand-copy h1 {
+      margin: 0;
+      font-size: 25px;
+      line-height: 1.25;
+      font-weight: 650;
+      letter-spacing: -.35px;
+    }
+    .brand-copy p {
+      margin: 4px 0 0;
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 14px;
+    }
+    .private-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 9px 14px;
+      background: var(--md-sys-color-secondary-container);
+      color: var(--md-sys-color-on-secondary-container);
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .private-dot {
+      width: 8px;
+      height: 8px;
+      background: #a8c7fa;
+      border-radius: 50%;
+      box-shadow: 0 0 0 4px rgba(168,199,250,.12);
+    }
+    .surface-card {
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: 28px;
+      padding: 23px;
+      margin-bottom: 18px;
+      background: color-mix(in srgb, var(--md-sys-color-surface-container) 94%, transparent);
+      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+    }
+    .section-heading {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 650;
+      letter-spacing: -.2px;
+    }
+    .supporting {
+      margin: 7px 0 0;
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .connect-layout {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      gap: 22px;
+      align-items: end;
+      margin-top: 16px;
+    }
+    md-outlined-text-field {
+      width: min(360px, 100%);
+      --md-outlined-text-field-container-shape: 16px;
+      --md-outlined-text-field-input-text-size: 18px;
+      --md-outlined-text-field-input-text-font: Roboto, "Segoe UI", Arial, sans-serif;
+      --md-outlined-text-field-label-text-font: Roboto, "Segoe UI", Arial, sans-serif;
+    }
+    md-filled-button, md-outlined-button, md-filled-tonal-button {
+      --md-filled-button-container-shape: 999px;
+      --md-outlined-button-container-shape: 999px;
+      --md-filled-tonal-button-container-shape: 999px;
+      --md-filled-button-label-text-font: Roboto, "Segoe UI", Arial, sans-serif;
+      --md-outlined-button-label-text-font: Roboto, "Segoe UI", Arial, sans-serif;
+      --md-filled-tonal-button-label-text-font: Roboto, "Segoe UI", Arial, sans-serif;
+    }
+    md-dialog { --md-dialog-container-shape: 28px; }
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .connect-layout .action-row { margin-top: 0; }
+    .status {
+      min-height: 20px;
+      margin: 13px 0 0;
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .status[data-kind="error"] { color: var(--md-sys-color-error); }
+    .status[data-kind="success"] { color: var(--md-sys-color-primary); }
+    .upload-panel { display: none; }
+    .drop-zone {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 138px;
+      margin-top: 17px;
+      padding: 22px;
+      border: 1px dashed var(--md-sys-color-outline);
+      border-radius: 22px;
+      background: var(--md-sys-color-surface-container-low);
+      transition: background .16s ease, border-color .16s ease;
+    }
+    .drop-zone.drag {
+      border-color: var(--md-sys-color-primary);
+      background: var(--md-sys-color-primary-container);
+    }
+    .drop-copy { min-width: 0; }
+    .drop-copy strong {
+      display: block;
+      font-size: 16px;
+      font-weight: 650;
+    }
+    .drop-copy span {
+      display: block;
+      margin-top: 6px;
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .file-input { display: none; }
+    md-linear-progress {
+      display: none;
+      margin-top: 13px;
+      --md-linear-progress-track-shape: 999px;
+      --md-linear-progress-active-indicator-shape: 999px;
+    }
+    .library-panel { display: none; }
+    .library-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 17px;
+    }
+    .library-heading-copy { min-width: 0; }
+    .count-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: var(--md-sys-color-secondary-container);
+      color: var(--md-sys-color-on-secondary-container);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .55px;
+      white-space: nowrap;
+    }
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+      gap: 13px;
+    }
+    .media-card {
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: 20px;
+      background: var(--md-sys-color-surface-container-low);
+    }
+    .media-preview {
+      display: grid;
+      place-items: center;
+      height: 132px;
+      overflow: hidden;
+      background: var(--md-sys-color-surface-container-high);
+    }
+    .media-preview img, .media-preview video {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .preview-placeholder {
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 32px;
+      font-weight: 500;
+    }
+    .media-meta { padding: 12px; }
+    .filename {
+      overflow: hidden;
+      color: var(--md-sys-color-on-surface);
+      font-size: 13px;
+      font-weight: 650;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-size {
+      margin-top: 5px;
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 12px;
+    }
+    .media-meta md-outlined-button {
+      width: 100%;
+      margin-top: 12px;
+      --md-outlined-button-label-text-color: var(--md-sys-color-error);
+      --md-outlined-button-outline-color: var(--md-sys-color-outline-variant);
+    }
+    .empty-state {
+      padding: 35px 18px;
+      border: 1px dashed var(--md-sys-color-outline-variant);
+      border-radius: 20px;
+      color: var(--md-sys-color-on-surface-variant);
+      text-align: center;
+      line-height: 1.55;
+      background: var(--md-sys-color-surface-container-low);
+    }
+    .foot {
+      margin-top: 23px;
+      color: var(--md-sys-color-on-surface-variant);
+      text-align: center;
+      font-size: 12px;
+    }
+    @media(max-width: 620px) {
+      body { padding: 21px 12px 36px; }
+      .topbar { align-items: flex-start; }
+      .private-chip { display: none; }
+      .surface-card { padding: 18px; border-radius: 24px; }
+      .connect-layout { grid-template-columns: minmax(0,1fr); align-items: start; }
+      md-outlined-text-field { width: 100%; }
+      .connect-layout .action-row { margin-top: 0; }
+      .drop-zone { align-items: flex-start; flex-direction: column; }
+      .drop-zone md-filled-tonal-button { align-self: stretch; }
+      .media-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+      .media-preview { height: 112px; }
+    }
   </style>
 </head>
 <body>
 <main>
-  <header>
-    <div class="logo">F</div>
-    <div><h1>FireShare</h1><p>Send your photos and videos to the big screen.</p></div>
+  <header class="topbar">
+    <div class="brand-mark" aria-hidden="true">F</div>
+    <div class="brand-copy">
+      <h1>FireShare</h1>
+      <p>Send photos and videos to your TV</p>
+    </div>
+    <div class="private-chip"><span class="private-dot"></span>Private Wi-Fi transfer</div>
   </header>
 
-  <section class="panel">
-    <h2>Connect to your TV</h2>
-    <p class="muted">Enter the six-digit access PIN shown on your Fire TV. Your files transfer directly over your home Wi-Fi and stay on the TV.</p>
-    <label for="pin">TV access PIN</label>
-    <input id="pin" type="password" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••">
-    <div class="actions"><button id="connect">Connect</button><button class="secondary" id="forget">Forget PIN</button></div>
-    <div class="status" id="connectStatus" role="status"></div>
+  <section class="surface-card" aria-labelledby="connectHeading">
+    <h2 class="section-heading" id="connectHeading">Connect to your TV</h2>
+    <p class="supporting">Enter the six-digit access PIN shown on FireShare. Your files transfer directly over your home Wi-Fi and stay on the TV.</p>
+    <div class="connect-layout">
+      <md-outlined-text-field
+        id="pin"
+        type="password"
+        label="TV access PIN"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+        maxlength="6"
+        supporting-text="Six digits from your TV screen">
+      </md-outlined-text-field>
+      <div class="action-row">
+        <md-filled-button id="connect">Connect</md-filled-button>
+        <md-outlined-button id="forget">Forget PIN</md-outlined-button>
+      </div>
+    </div>
+    <p class="status" id="connectStatus" role="status" aria-live="polite"></p>
   </section>
 
-  <section class="panel" id="uploadPanel" hidden>
-    <h2>Upload media</h2>
-    <p class="muted">Choose photos or videos, or drag them into the area below. You can select multiple files at once.</p>
-    <label class="drop" id="drop">
-      <div class="upload-icon">＋</div>
-      <strong>Choose files or drop them here</strong>
-      <span>JPG, PNG, GIF, WEBP, MP4, MOV, MKV and more</span>
-      <input id="files" type="file" accept="image/*,video/*" multiple>
-    </label>
-    <div class="actions"><button id="upload" disabled>Upload selected files</button><button class="secondary" id="clear">Clear selection</button></div>
-    <div class="status" id="uploadStatus" role="status"></div>
-    <div class="progress" id="progress"><div id="progressBar"></div></div>
+  <section class="surface-card upload-panel" id="uploadPanel" aria-labelledby="uploadHeading">
+    <h2 class="section-heading" id="uploadHeading">Upload media</h2>
+    <p class="supporting">Choose photos or videos, or drag them into the area below. You can select multiple files at once.</p>
+    <div class="drop-zone" id="drop">
+      <div class="drop-copy">
+        <strong>Choose files or drop them here</strong>
+        <span>JPG, PNG, GIF, WEBP, MP4, MOV, MKV and more</span>
+      </div>
+      <md-filled-tonal-button id="chooseFiles">Choose files</md-filled-tonal-button>
+      <input class="file-input" id="files" type="file" accept="image/*,video/*" multiple>
+    </div>
+    <div class="action-row">
+      <md-filled-button id="upload" disabled>Upload selected files</md-filled-button>
+      <md-outlined-button id="clear">Clear selection</md-outlined-button>
+    </div>
+    <p class="status" id="uploadStatus" role="status" aria-live="polite"></p>
+    <md-linear-progress id="progress" aria-label="Upload progress" value="0"></md-linear-progress>
   </section>
 
-  <section class="panel" id="libraryPanel" hidden>
-    <div class="library-head"><h2>On your TV</h2><span class="count" id="count">0 ITEMS</span></div>
-    <div class="grid" id="library"></div>
+  <section class="surface-card library-panel" id="libraryPanel" aria-labelledby="libraryHeading">
+    <div class="library-heading">
+      <div class="library-heading-copy">
+        <h2 class="section-heading" id="libraryHeading">On your TV</h2>
+        <p class="supporting">Media currently saved in FireShare.</p>
+      </div>
+      <div class="action-row" style="margin:0">
+        <span class="count-label" id="count">0 ITEMS</span>
+        <md-outlined-button id="refresh">Refresh</md-outlined-button>
+      </div>
+    </div>
+    <div class="media-grid" id="library"></div>
   </section>
+
   <div class="foot">FireShare · Private local-network transfer · No cloud upload</div>
 </main>
 
-<script>
-(() => {
-  const $ = (id) => document.getElementById(id);
-  const pinInput = $("pin");
-  const connectStatus = $("connectStatus");
-  const uploadStatus = $("uploadStatus");
-  const fileInput = $("files");
-  let pin = sessionStorage.getItem("fireshare-pin") || "";
-  if (pin) pinInput.value = pin;
+<md-dialog id="deleteDialog">
+  <div slot="headline">Remove this item?</div>
+  <div slot="content" id="deleteMessage">This file will be permanently removed from your Fire TV.</div>
+  <div slot="actions">
+    <md-text-button id="cancelDelete">Cancel</md-text-button>
+    <md-filled-button id="confirmDelete">Remove</md-filled-button>
+  </div>
+</md-dialog>
 
-  function setConnected(value) {
-    $("uploadPanel").hidden = !value;
-    $("libraryPanel").hidden = !value;
-    $("connect").textContent = value ? "Connected" : "Connect";
-  }
-  function formatSize(bytes) {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024*1024) return (bytes/1024).toFixed(0) + " KB";
-    if (bytes < 1024*1024*1024) return (bytes/1024/1024).toFixed(1) + " MB";
-    return (bytes/1024/1024/1024).toFixed(2) + " GB";
-  }
-  function mediaUrl(name) {
-    return "/media/" + encodeURIComponent(name) + "?pin=" + encodeURIComponent(pin);
-  }
-  async function api(path, options) {
-    const response = await fetch(path, options);
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || data.message || "Request failed (" + response.status + ")");
-    return data;
-  }
-  async function connect() {
-    pin = pinInput.value.trim();
-    if (!/^\d{6}$/.test(pin)) {
-      connectStatus.textContent = "Enter the six-digit PIN displayed on the TV.";
-      return;
-    }
-    connectStatus.textContent = "Connecting…";
-    try {
-      await api("/api/media?pin=" + encodeURIComponent(pin));
-      sessionStorage.setItem("fireshare-pin", pin);
-      connectStatus.textContent = "Connected to your Fire TV.";
-      setConnected(true);
-      await loadLibrary();
-    } catch (error) {
-      sessionStorage.removeItem("fireshare-pin");
-      setConnected(false);
-      connectStatus.textContent = error.message === "Incorrect or missing TV access PIN." ? "That PIN wasn't accepted. Check the TV screen and try again." : error.message;
-    }
-  }
-  async function loadLibrary() {
-    const files = await api("/api/media?pin=" + encodeURIComponent(pin));
-    $("count").textContent = files.length + (files.length === 1 ? " ITEM" : " ITEMS");
-    const grid = $("library");
-    grid.replaceChildren();
-    if (!files.length) {
-      const empty = document.createElement("div");
-      empty.className = "empty";
-      empty.textContent = "Nothing here yet. Upload a photo or video to get started.";
-      grid.append(empty);
-      return;
-    }
-    files.forEach(file => {
-      const card = document.createElement("article");
-      card.className = "media";
-      const preview = document.createElement("div");
-      preview.className = "preview";
-      if (file.type === "video") {
-        const video = document.createElement("video");
-        video.src = mediaUrl(file.name);
-        video.muted = true;
-        video.preload = "metadata";
-        preview.append(video);
-      } else {
-        const img = document.createElement("img");
-        img.src = mediaUrl(file.name);
-        img.alt = file.name;
-        img.loading = "lazy";
-        preview.append(img);
-      }
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      const name = document.createElement("div");
-      name.className = "filename";
-      name.title = file.name;
-      name.textContent = file.name;
-      const size = document.createElement("div");
-      size.className = "size";
-      size.textContent = formatSize(file.size);
-      const remove = document.createElement("button");
-      remove.className = "delete";
-      remove.textContent = "Remove from TV";
-      remove.addEventListener("click", async () => {
-        if (!confirm("Delete " + file.name + " from your Fire TV?")) return;
-        remove.disabled = true;
-        try {
-          await api("/api/media/" + encodeURIComponent(file.name) + "?pin=" + encodeURIComponent(pin), {method:"DELETE"});
-          await loadLibrary();
-        } catch (error) {
-          alert(error.message);
-          remove.disabled = false;
-        }
-      });
-      meta.append(name, size, remove);
-      card.append(preview, meta);
-      grid.append(card);
-    });
-  }
-
-  function updateSelection() {
-    const count = fileInput.files.length;
-    $("upload").disabled = count === 0;
-    $("upload").textContent = count ? "Upload " + count + (count === 1 ? " file" : " files") : "Upload selected files";
-  }
-  async function uploadFiles() {
-    const selected = Array.from(fileInput.files);
-    if (!selected.length) return;
-    $("upload").disabled = true;
-    $("progress").style.display = "block";
-    $("progressBar").style.width = "0%";
-    let completed = 0;
-    for (const file of selected) {
-      uploadStatus.textContent = "Uploading " + file.name + " (" + (completed + 1) + " of " + selected.length + ")…";
-      const body = new FormData();
-      body.append("file", file, file.name);
-      try {
-        await api("/upload?pin=" + encodeURIComponent(pin), {method:"POST", body});
-        completed++;
-        $("progressBar").style.width = Math.round(completed / selected.length * 100) + "%";
-      } catch (error) {
-        uploadStatus.textContent = "Stopped at " + file.name + ": " + error.message;
-        updateSelection();
-        return;
-      }
-    }
-    uploadStatus.textContent = "Uploaded " + completed + (completed === 1 ? " file." : " files.");
-    fileInput.value = "";
-    updateSelection();
-    await loadLibrary();
-  }
-
-  $("connect").addEventListener("click", connect);
-  $("forget").addEventListener("click", () => {
-    sessionStorage.removeItem("fireshare-pin");
-    pin = "";
-    pinInput.value = "";
-    setConnected(false);
-    connectStatus.textContent = "Saved PIN cleared.";
-  });
-  $("upload").addEventListener("click", uploadFiles);
-  $("clear").addEventListener("click", () => { fileInput.value = ""; updateSelection(); uploadStatus.textContent = ""; });
-  fileInput.addEventListener("change", updateSelection);
-
-  const drop = $("drop");
-  ["dragenter","dragover"].forEach(type => drop.addEventListener(type, event => {
-    event.preventDefault(); drop.classList.add("drag");
-  }));
-  ["dragleave","drop"].forEach(type => drop.addEventListener(type, event => {
-    event.preventDefault(); drop.classList.remove("drag");
-  }));
-  drop.addEventListener("drop", event => {
-    const transfer = new DataTransfer();
-    Array.from(event.dataTransfer.files).forEach(file => transfer.items.add(file));
-    fileInput.files = transfer.files;
-    updateSelection();
-  });
-
-  if (pin) connect();
-})();
-</script>
+<script type="module" src="/app.js"></script>
 </body>
 </html>

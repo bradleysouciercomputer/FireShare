@@ -22,10 +22,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Collections
@@ -295,6 +295,7 @@ private fun FireShareScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(insets)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 30.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -346,7 +347,8 @@ private fun FireShareScreen(
                     selected = filter == MediaFilter.ALL,
                     onClick = { filter = MediaFilter.ALL },
                     label = { Text("All media") },
-                    modifier = Modifier.tvFocusRing(RoundedCornerShape(50))
+                    modifier = Modifier.tvFocusRing(RoundedCornerShape(50)),
+                    shape = RoundedCornerShape(50)
                 )
                 FilterChip(
                     selected = filter == MediaFilter.PHOTOS,
@@ -373,24 +375,30 @@ private fun FireShareScreen(
                     isFiltered = filter != MediaFilter.ALL,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
+                        .height(220.dp)
                 )
             } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 205.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentPadding = PaddingValues(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(visibleFiles, key = { it.name }) { file ->
-                        MediaGridCard(
-                            file = file,
-                            onOpen = { onOpen(file) },
-                            onDelete = { pendingDelete = file }
-                        )
+                    visibleFiles.chunked(4).forEach { rowFiles ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            rowFiles.forEach { file ->
+                                MediaGridCard(
+                                    file = file,
+                                    onOpen = { onOpen(file) },
+                                    onDelete = { pendingDelete = file },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            repeat(4 - rowFiles.size) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
             }
@@ -429,7 +437,8 @@ private fun FireShareScreen(
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     ),
-                    modifier = Modifier.tvFocusRing(RoundedCornerShape(50))
+                    modifier = Modifier.tvFocusRing(RoundedCornerShape(50)),
+                    shape = RoundedCornerShape(50)
                 ) {
                     Text("Delete")
                 }
@@ -439,7 +448,8 @@ private fun FireShareScreen(
                     onClick = { pendingDelete = null },
                     modifier = Modifier
                         .focusRequester(cancelFocusRequester)
-                        .tvFocusRing(RoundedCornerShape(50))
+                        .tvFocusRing(RoundedCornerShape(50)),
+                    shape = RoundedCornerShape(50)
                 ) {
                     Text("Cancel")
                 }
@@ -623,6 +633,7 @@ private fun UploadPanel(
                         modifier = Modifier
                             .height(42.dp)
                             .tvFocusRing(RoundedCornerShape(50)),
+                        shape = RoundedCornerShape(50),
                         contentPadding = PaddingValues(horizontal = 18.dp)
                     ) {
                         Icon(
@@ -638,6 +649,7 @@ private fun UploadPanel(
                         modifier = Modifier
                             .height(42.dp)
                             .tvFocusRing(RoundedCornerShape(50)),
+                        shape = RoundedCornerShape(50),
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         Icon(
@@ -743,7 +755,8 @@ private fun EmptyLibrary(isFiltered: Boolean, modifier: Modifier = Modifier) {
 private fun MediaGridCard(
     file: File,
     onOpen: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val thumbnail by produceState<Bitmap?>(
         initialValue = null,
@@ -754,7 +767,7 @@ private fun MediaGridCard(
     }
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(206.dp),
         shape = RoundedCornerShape(22.dp),
@@ -836,6 +849,7 @@ private fun MediaGridCard(
                         .weight(1f)
                         .height(36.dp)
                         .tvFocusRing(RoundedCornerShape(50)),
+                    shape = RoundedCornerShape(50),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                 ) {
                     Icon(
@@ -849,8 +863,8 @@ private fun MediaGridCard(
                 IconButton(
                     onClick = onDelete,
                     modifier = Modifier
-                        .size(38.dp)
-                        .tvFocusRing(RoundedCornerShape(50))
+                        .size(48.dp)
+                        .tvFocusRing(CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.DeleteOutline,
