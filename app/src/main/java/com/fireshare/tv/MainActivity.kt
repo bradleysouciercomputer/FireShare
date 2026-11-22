@@ -49,6 +49,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -59,6 +60,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -220,11 +222,16 @@ fun FireShareTheme(content: @Composable () -> Unit) {
     } else {
         FireShareDarkColors
     }
-    MaterialTheme(
-        colorScheme = colors,
-        content = content
-    )
+    MaterialTheme(colorScheme = colors) {
+        // TV controls are visually sized for a remote. Avoid Material's invisible
+        // 48dp touch-target expansion so focus outlines wrap the visible control.
+        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+            content()
+        }
+    }
 }
+
+private val TvControlShape: Shape = RoundedCornerShape(50)
 
 private val FireShareDarkColors = darkColorScheme(
     primary = Color(0xFFA8C7FA),
@@ -347,20 +354,22 @@ private fun FireShareScreen(
                     selected = filter == MediaFilter.ALL,
                     onClick = { filter = MediaFilter.ALL },
                     label = { Text("All media") },
-                    modifier = Modifier.tvFocusRing(RoundedCornerShape(50)),
-                    shape = RoundedCornerShape(50)
+                    modifier = Modifier.tvFocusRing(TvControlShape),
+                    shape = TvControlShape
                 )
                 FilterChip(
                     selected = filter == MediaFilter.PHOTOS,
                     onClick = { filter = MediaFilter.PHOTOS },
                     label = { Text("Photos") },
-                    modifier = Modifier.tvFocusRing(RoundedCornerShape(50))
+                    modifier = Modifier.tvFocusRing(TvControlShape),
+                    shape = TvControlShape
                 )
                 FilterChip(
                     selected = filter == MediaFilter.VIDEOS,
                     onClick = { filter = MediaFilter.VIDEOS },
                     label = { Text("Videos") },
-                    modifier = Modifier.tvFocusRing(RoundedCornerShape(50))
+                    modifier = Modifier.tvFocusRing(TvControlShape),
+                    shape = TvControlShape
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
@@ -437,8 +446,8 @@ private fun FireShareScreen(
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     ),
-                    modifier = Modifier.tvFocusRing(RoundedCornerShape(50)),
-                    shape = RoundedCornerShape(50)
+                    modifier = Modifier.tvFocusRing(TvControlShape),
+                    shape = TvControlShape
                 ) {
                     Text("Delete")
                 }
@@ -448,8 +457,8 @@ private fun FireShareScreen(
                     onClick = { pendingDelete = null },
                     modifier = Modifier
                         .focusRequester(cancelFocusRequester)
-                        .tvFocusRing(RoundedCornerShape(50)),
-                    shape = RoundedCornerShape(50)
+                        .tvFocusRing(TvControlShape),
+                    shape = TvControlShape
                 ) {
                     Text("Cancel")
                 }
@@ -499,7 +508,7 @@ private fun HeaderBar(isSharing: Boolean) {
         }
         Spacer(modifier = Modifier.weight(1f))
         Surface(
-            shape = RoundedCornerShape(50),
+            shape = TvControlShape,
             color = if (isSharing) MaterialTheme.colorScheme.secondaryContainer
             else MaterialTheme.colorScheme.surfaceVariant
         ) {
@@ -632,8 +641,8 @@ private fun UploadPanel(
                         onClick = onToggleSharing,
                         modifier = Modifier
                             .height(42.dp)
-                            .tvFocusRing(RoundedCornerShape(50)),
-                        shape = RoundedCornerShape(50),
+                            .tvFocusRing(TvControlShape),
+                        shape = TvControlShape,
                         contentPadding = PaddingValues(horizontal = 18.dp)
                     ) {
                         Icon(
@@ -648,8 +657,8 @@ private fun UploadPanel(
                         onClick = onRefresh,
                         modifier = Modifier
                             .height(42.dp)
-                            .tvFocusRing(RoundedCornerShape(50)),
-                        shape = RoundedCornerShape(50),
+                            .tvFocusRing(TvControlShape),
+                        shape = TvControlShape,
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         Icon(
@@ -808,7 +817,7 @@ private fun MediaGridCard(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(8.dp),
-                        shape = RoundedCornerShape(50),
+                        shape = TvControlShape,
                         color = Color.Black.copy(alpha = 0.72f),
                         contentColor = Color.White
                     ) {
@@ -848,8 +857,8 @@ private fun MediaGridCard(
                     modifier = Modifier
                         .weight(1f)
                         .height(36.dp)
-                        .tvFocusRing(RoundedCornerShape(50)),
-                    shape = RoundedCornerShape(50),
+                        .tvFocusRing(TvControlShape),
+                    shape = TvControlShape,
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                 ) {
                     Icon(
