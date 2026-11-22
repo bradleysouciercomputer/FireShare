@@ -9,7 +9,8 @@ FireShare is a local-first media hub for Amazon Fire TV. It lets you upload phot
 - Multi-file photo and video uploads from a phone or PC browser.
 - Media library stored privately in the app's storage on the Fire TV.
 - Photo viewing and video playback.
-- Delete files from the TV in the browser upload page.
+- Open and delete controls directly on each TV library item, with a confirmation before permanent deletion.
+- Delete files from the TV in the browser upload page or directly with the Fire TV remote.
 - No cloud account and no third-party media hosting.
 
 ## Install on Fire TV
@@ -21,6 +22,10 @@ FireShare is a local-first media hub for Amazon Fire TV. It lets you upload phot
 
 3. Allow Downloader to install unknown apps when Fire TV asks.
 4. Open FireShare from your Apps library.
+
+## Manage media on the TV
+
+Use the Fire TV remote to move between each library item's **Open** and **Delete** buttons. Selecting Delete opens a confirmation dialog; the item is only removed after you confirm. Deletion removes the file from FireShare's private media folder on the TV.
 
 ## Send media to the TV
 
